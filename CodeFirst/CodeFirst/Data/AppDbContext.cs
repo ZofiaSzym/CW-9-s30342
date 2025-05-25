@@ -20,7 +20,7 @@ public class  AppDbContext: DbContext
         
         var medi = new Medicament
         {
-            Description = "very healthy",
+            Details = "very healthy",
             IdMedicament = 1,
             Name = "allegra",
             Type = "anti-allergy"
@@ -38,7 +38,7 @@ public class  AppDbContext: DbContext
         {
             FirstName = "John",
             LastName = "Paul",
-            DateOfBirth = new DateOnly(1980, 12, 31),
+            Birthdate = new DateOnly(1980, 12, 31),
             IdPatient = 1
         };
         var prescription = new Prescription

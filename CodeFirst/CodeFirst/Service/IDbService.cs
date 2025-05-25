@@ -1,6 +1,7 @@
 ﻿using CodeFirst.Data;
 using CodeFirst.DTOs;
 using CodeFirst.Exception;
+using CodeFirst.Models;
 using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.EntityFrameworkCore;
 
@@ -9,6 +10,7 @@ namespace CodeFirst.Service;
 public interface IDbService
 {
     public Task<PatientGetDTO> GetsPatientDetailsByIdAsync(int patientId);
+    public Task CreatePrescriptionAsync(PrescriptionCreateDTO prescriptionData);
     
 }
 
@@ -32,7 +34,7 @@ public class DbService(AppDbContext data) : IDbService
             IdPatient = patient.IdPatient,
             FirstName = patient.FirstName,
             LastName = patient.LastName,
-            DateOfBirth = patient.DateOfBirth,
+            Birthdate = patient.Birthdate,
             Prescriptions = patient.Prescription
                 .OrderBy(p => p.DueDate)
                 .Select(p => new PrescriptionGetDTO
@@ -40,7 +42,7 @@ public class DbService(AppDbContext data) : IDbService
                     IdPrescription = p.IdPrescription,
                     Date = p.Date,
                     DueDate = p.DueDate,
-                    Doctors = new DoctorGetDTO
+                    Doctor = new DoctorGetDTO
                     {
                         IdDoctor = p.Doctor.IdDoctor,
                         FirstName = p.Doctor.FirstName
@@ -50,12 +52,82 @@ public class DbService(AppDbContext data) : IDbService
                         IdMedicament = pm.Medicament.IdMedicament,
                         MedicamentName = pm.Medicament.Name,
                         Dose =  pm.Dose,
-                        Description = pm.Details
+                        Details = pm.Details
                     }).ToList()
                 }).ToList()
         };
 
         return response;
+    }
+
+    public async Task CreatePrescriptionAsync(PrescriptionCreateDTO prescriptionData)
+    {
+        List<Medicament> meds = [];
+
+        if (prescriptionData.Medicament.Count() > 10)
+        {
+            throw new TooMuchException("You can't add more than 10 medicaments");
+        }
+        
+        if (prescriptionData.Medicament is not null && prescriptionData.Medicament.Count() != 0)
+        {
+            foreach (var idMedicament in prescriptionData.Medicament)
+            {
+                var med = await data.Medicaments.FirstOrDefaultAsync(m => m.IdMedicament == idMedicament.IdMedicament);
+                if (med is null)
+                {
+                    throw new NotFoundException($"Medicament with id: {med} not found");
+                }
+                meds.Add(med);
+            }
+        }
+        
+       
+         var patient = await data.Patients.FirstOrDefaultAsync(p => p.IdPatient == prescriptionData.Patient.IdPatient);
+        if (patient is null)
+        {
+            var p = new Patient
+            {
+                IdPatient = prescriptionData.Patient.IdPatient,
+                FirstName = prescriptionData.Patient.FirstName,
+                LastName = prescriptionData.Patient.LastName,
+                Birthdate = prescriptionData.Patient.Birthdate,
+            };
+            await data.Patients.AddAsync(p);
+            await data.SaveChangesAsync();
+            
+        }
+
+        if (prescriptionData.DueDate < prescriptionData.Date)
+        {
+            throw new TooLateException("Due date cannot be before prescription date");
+        }
+
+        var prescription = new Prescription
+        {
+            Date = prescriptionData.Date,
+            DueDate = prescriptionData.DueDate,
+            IdDoctor = prescriptionData.Doctor.IdDoctor,
+            IdPatient = prescriptionData.Patient.IdPatient,
+        };
+        await data.Prescriptions.AddAsync(prescription);
+        await data.SaveChangesAsync();
+
+        foreach (var med in prescriptionData.Medicament)
+        {
+            var m = new PrescriptionMedicament
+            {
+                IdMedicament = med.IdMedicament,
+                IdPrescription = prescription.IdPrescription,
+                Dose = med.Dose,
+                Details = med.Details
+            };
+            await data.PrescriptionMedicaments.AddAsync(m);
+            await data.SaveChangesAsync();
+            
+        }
+      
+        
     }
     
 }

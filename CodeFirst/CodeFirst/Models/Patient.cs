@@ -12,7 +12,7 @@ public class Patient
     public string FirstName { get; set; }
     [MaxLength(100)]
     public string LastName { get; set; }
-    public DateOnly DateOfBirth { get; set; }
+    public DateOnly Birthdate { get; set; }
     public virtual ICollection<Prescription> Prescription{ get; set; }
 
     
