@@ -82,20 +82,23 @@ public class DbService(AppDbContext data) : IDbService
             }
         }
         
-       
-         var patient = await data.Patients.FirstOrDefaultAsync(p => p.IdPatient == prescriptionData.Patient.IdPatient);
+        var patientData = prescriptionData.Patient;
+        var patient = await data.Patients.FirstOrDefaultAsync(p =>
+            p.FirstName == patientData.FirstName &&
+            p.LastName == patientData.LastName &&
+            p.Birthdate == patientData.Birthdate
+        );
+
         if (patient is null)
         {
-            var p = new Patient
+            patient = new Patient
             {
-                IdPatient = prescriptionData.Patient.IdPatient,
-                FirstName = prescriptionData.Patient.FirstName,
-                LastName = prescriptionData.Patient.LastName,
-                Birthdate = prescriptionData.Patient.Birthdate,
+                FirstName = patientData.FirstName,
+                LastName = patientData.LastName,
+                Birthdate = patientData.Birthdate,
             };
-            await data.Patients.AddAsync(p);
-            await data.SaveChangesAsync();
-            
+            await data.Patients.AddAsync(patient);
+            await data.SaveChangesAsync(); 
         }
 
         if (prescriptionData.DueDate < prescriptionData.Date)
@@ -108,7 +111,7 @@ public class DbService(AppDbContext data) : IDbService
             Date = prescriptionData.Date,
             DueDate = prescriptionData.DueDate,
             IdDoctor = prescriptionData.Doctor.IdDoctor,
-            IdPatient = prescriptionData.Patient.IdPatient,
+            IdPatient = patient.IdPatient,
         };
         await data.Prescriptions.AddAsync(prescription);
         await data.SaveChangesAsync();
