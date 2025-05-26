@@ -17,7 +17,7 @@ public class PatientController(IDbService service) : ControllerBase
     {
         try
         {
-            return Ok(await service.GetsPatientDetailsByIdAsync(id));
+            return Ok(await service.GetPatientDetailsByIdAsync(id));
         }
         catch (NotFoundException e)
         {

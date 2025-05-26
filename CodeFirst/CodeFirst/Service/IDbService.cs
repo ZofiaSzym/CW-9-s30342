@@ -9,14 +9,14 @@ namespace CodeFirst.Service;
 
 public interface IDbService
 {
-    public Task<PatientGetDTO> GetsPatientDetailsByIdAsync(int patientId);
+    public Task<PatientGetDTO> GetPatientDetailsByIdAsync(int patientId);
     public Task CreatePrescriptionAsync(PrescriptionCreateDTO prescriptionData);
     
 }
 
 public class DbService(AppDbContext data) : IDbService
 {
-    public async Task<PatientGetDTO> GetsPatientDetailsByIdAsync(int patientId)
+    public async Task<PatientGetDTO> GetPatientDetailsByIdAsync(int patientId)
     {
         var patient = await data.Patients
             .Include(p => p.Prescription)
@@ -76,7 +76,7 @@ public class DbService(AppDbContext data) : IDbService
                 var med = await data.Medicaments.FirstOrDefaultAsync(m => m.IdMedicament == idMedicament.IdMedicament);
                 if (med is null)
                 {
-                    throw new NotFoundException($"Medicament with id: {med} not found");
+                    throw new NotFoundException($"Medicament with id: {med.IdMedicament} not found");
                 }
                 meds.Add(med);
             }
@@ -126,9 +126,8 @@ public class DbService(AppDbContext data) : IDbService
                 Details = med.Details
             };
             await data.PrescriptionMedicaments.AddAsync(m);
-            await data.SaveChangesAsync();
-            
         }
+        await data.SaveChangesAsync();
       
         
     }
